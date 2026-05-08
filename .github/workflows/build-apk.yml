@@ -38,9 +38,13 @@ jobs:
 
       - name: Fix Kotlin version for React Native 0.81 compatibility
         run: |
-          # Fix root build.gradle
-          sed -i "s/org.jetbrains.kotlin:kotlin-gradle-plugin\b/org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20/" android/build.gradle
-          echo "=== build.gradle kotlin plugin ==="
+          # Fix root build.gradle — only if version not already set (idempotent)
+          if grep -q "org.jetbrains.kotlin:kotlin-gradle-plugin'" android/build.gradle 2>/dev/null; then
+            sed -i "s/org.jetbrains.kotlin:kotlin-gradle-plugin'/org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20'/" android/build.gradle
+            echo "=== Kotlin version patched in build.gradle ==="
+          else
+            echo "=== Kotlin version already set or not needed ==="
+          fi
           grep "kotlin-gradle-plugin" android/build.gradle
           # Fix expo-dev-launcher gradle plugin
           DEV_LAUNCHER="node_modules/expo-dev-launcher/expo-dev-launcher-gradle-plugin/build.gradle.kts"
