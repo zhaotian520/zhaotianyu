@@ -29,19 +29,30 @@ jobs:
       - name: Prebuild Android project
         run: npx expo prebuild --platform android --non-interactive
 
+      - name: Check Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "No platforms dir"
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+
       - name: Fix Kotlin version for React Native 0.81 compatibility
         run: |
           # Fix root build.gradle
           sed -i "s/org.jetbrains.kotlin:kotlin-gradle-plugin\b/org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20/" android/build.gradle
+          echo "=== build.gradle kotlin plugin ==="
+          grep "kotlin-gradle-plugin" android/build.gradle
           # Fix expo-dev-launcher gradle plugin
           DEV_LAUNCHER="node_modules/expo-dev-launcher/expo-dev-launcher-gradle-plugin/build.gradle.kts"
           if [ -f "$DEV_LAUNCHER" ]; then
             sed -i 's/kotlin("jvm") version "1\.9\.25"/kotlin("jvm") version "2.1.20"/' "$DEV_LAUNCHER"
+            echo "=== dev-launcher kotlin ==="
+            grep "kotlin" "$DEV_LAUNCHER"
           fi
           echo "Kotlin version patched"
 
       - name: Build release APK
-        run: cd android && ./gradlew assembleRelease --max-workers 2 --no-daemon
+        run: cd android && ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tail -60
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
