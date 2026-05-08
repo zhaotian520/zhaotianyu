@@ -58,8 +58,15 @@ jobs:
       - name: Build release APK
         run: |
           cd android
-          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1
-          echo "=== Build exit code: $? ==="
+          set +e
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee gradle.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "=== Build exit code: $EXIT_CODE ==="
+          echo "=== Gradle ERROR lines ==="
+          grep -in "ERROR:\|FAILED\|error:\|Error:" gradle.log || echo "(no ERROR lines found)"
+          echo "=== Last 30 lines ==="
+          tail -30 gradle.log
+          exit $EXIT_CODE
 
       - name: Find APK files
         run: |
