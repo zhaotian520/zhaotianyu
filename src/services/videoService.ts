@@ -35,7 +35,7 @@ export async function getVideoAnalysis(videoPath: string): Promise<VideoAnalysis
 
 export function escapeDrawtext(text: string): string {
   return text
-    .replace(/'/g, "'\\\\\\''")
+    .replace(/'/g, "'\\''")
     .replace(/:/g, '\\:')
     .replace(/,/g, '\\,')
     .replace(/\(/g, '\\(')
@@ -95,6 +95,18 @@ export async function mixAudio(
   const rc = await session.getReturnCode();
   if (rc.isValueSuccess()) return outputPath;
   throw new Error('混音失败');
+}
+
+export async function generateBgmOnly(
+  bgmAudio: string,
+  targetDuration: number,
+  outputPath: string
+): Promise<string> {
+  const cmd = `-i "${bgmAudio}" -filter_complex "aloop=loop=-1:size=2147483647,atrim=duration=${targetDuration}[a]" -map "[a]" -ac 2 -ar 44100 -y "${outputPath}"`;
+  const session = await FFmpegKit.execute(cmd);
+  const rc = await session.getReturnCode();
+  if (rc.isValueSuccess()) return outputPath;
+  throw new Error('背景音乐生成失败');
 }
 
 export async function finalAssembly(

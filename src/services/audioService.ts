@@ -1,6 +1,7 @@
 import type { SubtitleSegment } from '@/types';
 import { ensureTempDir } from '@/utils/file';
 import { concatAudios } from '@/services/videoService';
+import { useFormStore } from '@/stores/formStore';
 
 // Will be replaced by custom native module
 let nativeTtsModule: any = null;
@@ -29,6 +30,14 @@ export async function synthesizeToFile(
 export async function generateVoiceover(
   segments: SubtitleSegment[]
 ): Promise<string | null> {
+  // Set speech rate on TTS module
+  if (nativeTtsModule?.setSpeechRate) {
+    try {
+      const rate = useFormStore.getState().speechRate;
+      await nativeTtsModule.setSpeechRate(rate);
+    } catch {}
+  }
+
   const dir = await ensureTempDir();
   const audioFiles: string[] = [];
 

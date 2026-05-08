@@ -36,6 +36,7 @@ export function useVideoProcessing() {
     setResultUri(null);
 
     let tempFiles: string[] = [];
+    let dir = '';
 
     try {
       // Step 0: Ensure temp dir
@@ -83,26 +84,33 @@ export function useVideoProcessing() {
       setProgress(55);
       const bgmUri = form.bgm.id !== 'none' ? form.bgm.uri ?? null : null;
       let audioMix: string | null = null;
-      if (ttsFile || bgmUri) {
-        // If TTS failed, create a silent/empty track or use just BGM
-        if (ttsFile) {
-          try {
-            const dir = await ensureTempDir();
-            audioMix = `${dir}mixed.mp3`;
-            await mixAudio(ttsFile, bgmUri, targetDuration, audioMix);
-            tempFiles.push(audioMix);
-          } catch {
-            // Mix failed, try just TTS without BGM
-            audioMix = ttsFile;
-          }
+      if (ttsFile && bgmUri) {
+        try {
+          dir = await ensureTempDir();
+          audioMix = `${dir}mixed.mp3`;
+          await mixAudio(ttsFile, bgmUri, targetDuration, audioMix);
+          tempFiles.push(audioMix);
+        } catch {
+          audioMix = ttsFile;
         }
+      } else if (ttsFile) {
+        audioMix = ttsFile;
+      } else if (bgmUri) {
+        try {
+          dir = await ensureTempDir();
+          const bgmOnly = `${dir}bgm_only.mp3`;
+          const { generateBgmOnly } = await import('@/services/videoService');
+          await generateBgmOnly(bgmUri, targetDuration, bgmOnly);
+          audioMix = bgmOnly;
+          tempFiles.push(bgmOnly);
+        } catch {}
       }
 
       // Step 6: Burn subtitles
       if (cancelledRef.current) return;
       setCurrentStep(6);
       setProgress(70);
-      const dir = await ensureTempDir();
+      dir = await ensureTempDir();
       const subtitledVideo = `${dir}subtitled.mp4`;
       const fontPath = await getFontPath();
       await burnSubtitles(videoPath, segments, fontPath, subtitledVideo);

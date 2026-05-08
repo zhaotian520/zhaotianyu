@@ -6,9 +6,12 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { setTtsModule } from '@/services/audioService';
 import ttsModule from 'expo-android-tts';
+import { useSettingsStore } from '@/stores/settingsStore';
 
 // Register native TTS module
 setTtsModule(ttsModule);
+// Load saved API key from SecureStore
+useSettingsStore.getState().loadApiKey();
 
 export default function App() {
   return (
